@@ -1,13 +1,18 @@
-import base.Client;
-import base.ClientType;
-import base.Sprite;
+
+import base.Server;
 import base.Window;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+import javax.swing.SwingUtilities;
+
 public class Main {
+
     public static void main(String[] args) {
-        Client client = new Client("localhost", 5000, ClientType.BIDIRECTIONAL);
-        client.connect();
+        SwingUtilities.invokeLater(() -> {
+            Window window = new Window();
+
+            Server server = new Server(5000, window);
+
+            new Thread(server::start).start();
+        });
     }
 }

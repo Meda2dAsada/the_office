@@ -1,3 +1,4 @@
+
 package base;
 
 public class Sprite {
@@ -14,29 +15,40 @@ public class Sprite {
     }
 
     @Override
-    public String toString() { //debug
-        return "Sprite(" + Sprite.toSubmissionFormat(this) + ")";
+    public String toString() {
+        return "Sprite(" + toSubmissionFormat(this) + ")";
     }
 
     public static String toSubmissionFormat(Sprite sprite) {
         // sprite, x, y, zorder, index
-        return sprite.sprite + "//" + sprite.x + "//" + sprite.y + "//" + sprite.order + "//" + sprite.index;
+        return sprite.sprite + "//"
+                + sprite.x + "//"
+                + sprite.y + "//"
+                + sprite.order + "//"
+                + sprite.index;
     }
 
     public static Sprite fromSubmissionFormat(String format) {
-        if (!format.contains("//")) return null;
+        if (format == null) {
+            return null;
+        }
 
-        String[] split = format.split("//");
+        String[] split = format.split("//", -1);
 
-        if (split.length < 5) return null;
+        if (split.length != 5 || split[0].isBlank()) {
+            return null;
+        }
 
-        return new Sprite(
-                split[0],
-                Float.parseFloat(split[1]),
-                Float.parseFloat(split[2]),
-                Float.parseFloat(split[3]),
-                Integer.parseInt(split[4])
-        );
+        try {
+            return new Sprite(
+                    split[0],
+                    Float.parseFloat(split[1]),
+                    Float.parseFloat(split[2]),
+                    Float.parseFloat(split[3]),
+                    Integer.parseInt(split[4])
+            );
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
-
 }

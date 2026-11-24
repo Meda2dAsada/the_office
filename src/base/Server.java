@@ -1,123 +1,83 @@
 package base;
 
 import java.net.Socket;
-import java.io.PrintWriter;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 public class Server {
-    private int port;
-    //private ExecutorService pool;
-    private ServerSocket serverSocket;
-    private ArrayList<ClientManager> clients = new ArrayList<>();
 
-    public Server() {
-        this(5000);
+    private final int port;
+    private final Window window;
+
+    private ServerSocket serverSocket;
+    private final ArrayList<ClientManager> clients;
+
+    public Server(Window window) {
+        this(5000, window);
     }
 
-    public Server(int port) {
+    public Server(int port, Window window) {
         this.port = port;
+        this.window = window;
+        this.clients = new ArrayList<>();
     }
 
     public void start() {
         try {
-            //pool = Executors.newCachedThreadPool();
             serverSocket = new ServerSocket(port);
 
-            while (true) {
-                // El hilo principal solo se encarga de aceptar clientes
+            System.out.println("Server running on port " + port);
+
+            while (!serverSocket.isClosed()) {
                 Socket clientSocket = serverSocket.accept();
-                //BufferedReader entrada = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                //PrintWriter salida = new PrintWriter(clientSocket.getOutputStream(), true);
 
-                addClient(new ClientManager(clientSocket)); // redirije los clientes a su respectivo manager
-                Thread.sleep(1000);
+                ClientManager manager = new ClientManager(
+                        clientSocket,
+                        window,
+                        this
+                );
+
+                addClient(manager);
             }
+
+        } catch (IOException e) {
+            System.out.println("Server stopped: " + e.getMessage());
         }
-        catch (Exception _) {}
     }
 
-    private synchronized void addClient(ClientManager cm) {
-        clients.add(cm);
-        cm.start();
+    private synchronized void addClient(ClientManager manager) {
+        clients.add(manager);
+        manager.start();
     }
 
-    public static void main(String[] args) {
-        Server server = new Server();
-        server.start();
+    public synchronized void removeClient(ClientManager manager) {
+        clients.remove(manager);
     }
 
-}
-
-
-/*
-
-    private boolean isMainServer;
-    private static Window window;
-    private HttpsServer server;
-
-    public Server(int port, String ip) {
-        setIsMainServer(ip == null);
-    }
-
-
-    @Override
-    public void run() {
-        while (true) {
-            if (getIsMainServer()) {
-                System.out.println("Im Main Server and im updating the window of my computer and sending info to the other computers");
-            }else {
-                System.out.println("Im and a client and im updating the window of my computer and receiving info from the main computer");
+    // Envía un sprite a todos los clientes excepto al que lo originó.
+    public synchronized void broadcastSprite(
+            String message,
+            ClientManager sender
+    ) {
+        for (ClientManager client : clients) {
+            if (client != sender) {
+                client.send(message);
             }
         }
     }
-public synchronized boolean connectTo() {
-    setIsMainServer(false);
-    return true;
+
+    // Envía un sprite a todos los clientes.
+    public synchronized void broadcastSprite(String message) {
+        broadcastSprite(message, null);
+    }
+
+    // El servidor también puede generar actualizaciones.
+    public void updateSprite(Sprite sprite) {
+        if (sprite == null) return;
+
+        window.updateSprite(sprite);
+
+        broadcastSprite(Sprite.toSubmissionFormat(sprite));
+    }
 }
-
-public synchronized boolean disconnect() {
-    setIsMainServer(true);
-    return true;
-}
-public synchronized boolean update(Sprite sprite) {
-    send(sprite);
-
-    return true;
-}
-
-public synchronized void send(Sprite sprite) {
-    String spriteString = Sprite.toSubmissionFormat(sprite);
-
-    // aqui debe de enviar la informacion al otro servidor
-}
-
-public boolean getIsMainServer() {
-    return isMainServer;
-}
-
-private void setIsMainServer(boolean isMainServer) {
-    this.isMainServer = isMainServer;
-}
-
-            serverSocket = new ServerSocket(port);
-            Socket clientSocket = serverSocket.accept();
-
-            BufferedReader input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            PrintWriter output = new PrintWriter(clientSocket.getOutputStream(), true);
-
-            // Leer mensaje enviado por el cliente
-            String mensajeRecibido = input.readLine();
-            System.out.println("Mensaje del cliente: " + mensajeRecibido);
-
-            // Enviar respuesta al cliente
-            output.println("Hola cliente, mensaje recibido con éxito.");
-
-            // Cerrar conexiones
-            socketClient.close();
-            System.out.println("Conexión cerrada.");
-
- */
