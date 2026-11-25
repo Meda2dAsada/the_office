@@ -5,72 +5,47 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 
+// es una "extension" de la clase Server que le ayuda a manejar multiples conexiones de clientes
 public class ClientManager extends Thread {
-
-    private final Socket clientSocket;
-    private final Window window;
-    private final Server server;
-
+    private Socket clientSocket;
     private ClientType clientType;
+    private ArrayList<Sprite> sprites;
 
     private BufferedReader input;
     private PrintWriter output;
 
-    public ClientManager(Socket clientSocket, Window window, Server server) {
+    public ClientManager(Socket clientSocket) {
         this.clientSocket = clientSocket;
-        this.window = window;
-        this.server = server;
     }
 
     @Override
     public void run() {
         try {
-            input = new BufferedReader(
-                    new InputStreamReader(clientSocket.getInputStream())
-            );
-
+            input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             output = new PrintWriter(clientSocket.getOutputStream(), true);
 
-            String type = input.readLine();
+            // debe de tener un tipo de cliente valido cuando se hace client.connect()
+            while ((clientType = ClientType.fromValue(input.readLine())) == null) {}
 
-            clientType = ClientType.fromValue(type);
+            if(clientType == ClientType.DIRECTIONAL) { // / solo puede recibir informacion
+                //Sprite current = new Sprite("prueba/de/enviar/informacion", 10, 10, 2, 10);
+                //output.println(Sprite.toSubmissionFormat(current));
 
-            if (clientType == null) {
-                return;
+                update(input.readLine());
+            }else { // puede recibir y enviar informacion
+
             }
 
-            String message;
-
-            while ((message = input.readLine()) != null) {
-                Sprite sprite = Sprite.fromSubmissionFormat(message);
-
-                if (sprite == null) continue;
-
-                // Actualiza la ventana del servidor.
-                window.updateSprite(sprite);
-
-                // Distribuye el cambio a los demás clientes.
-                server.broadcastSprite(message, this);
-            }
-
-        } catch (IOException e) {
-            System.out.println("Client disconnected.");
-
-        } finally {
-            server.removeClient(this);
-
-            try {
-                clientSocket.close();
-            } catch (IOException e) {
-                // No hay nada que hacer.
-            }
-        }
+        } catch (IOException e) {}
     }
 
-    public synchronized void send(String message) {
-        if (output != null) {
-            output.println(message);
-        }
+    private synchronized void update(String spriteFromSubmission) {
+        Sprite sprite = Sprite.fromSubmissionFormat(spriteFromSubmission);
+        if(sprite == null) return;
+
+        sprites.add(sprite);
+        System.out.println("New sprite: " + sprite);
     }
 }

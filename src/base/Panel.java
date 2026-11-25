@@ -1,139 +1,69 @@
 package base;
 
-import javax.swing.JPanel;
-import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Color;
+import java.awt.BasicStroke;
 import java.awt.Font;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
 
-public class Panel extends JPanel {
+public class Panel extends JPanel implements ActionListener {
+    private Timer timer;
+    private ArrayList<Sprite> sprites;
 
-    private final Map<Integer, Sprite> sprites;
-    private final Map<String, BufferedImage> imageCache;
+    public Panel(ArrayList<Sprite> sprites) {
+        timer = new Timer(16, this);
+        timer.start();
 
-    public Panel() {
-        sprites = new HashMap<>();
-        imageCache = new HashMap<>();
-
-        setBackground(new Color(235, 235, 235));
-    }
-
-    public synchronized void setSprite(int index, Sprite sprite) {
-        if (sprite == null) return;
-
-        sprites.put(index, sprite);
-        repaint();
-    }
-
-    public synchronized void addSprite(Sprite sprite) {
-        if (sprite == null) return;
-
-        sprites.put(sprite.index, sprite);
-        repaint();
-    }
-
-    public synchronized void removeSprite(int index) {
-        sprites.remove(index);
-        repaint();
-    }
-
-    public synchronized void clearSprites() {
-        sprites.clear();
-        repaint();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        Graphics2D g2d = (Graphics2D) g.create();
+        // convertir Graphics a Graphics2D para usar funciones avanzadas
+        Graphics2D g2d = (Graphics2D) g;
+        // activar suavizado de bordes (antialiasing) para mejor calidad
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g2d.setRenderingHint(
-                RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON
-        );
+        //  cambiar color y dibujar un rectángulo relleno
+        g2d.setColor(Color.BLUE);
+        g2d.fillRect(50, 50, 100, 80); // (x, y, ancho, alto)
 
-        g2d.setRenderingHint(
-                RenderingHints.KEY_INTERPOLATION,
-                RenderingHints.VALUE_INTERPOLATION_BILINEAR
-        );
+        // 4. Cambiar grosor de línea con BasicStroke
+        g2d.setColor(Color.RED);
+        g2d.setStroke(new BasicStroke(4)); // Grosor de 4 píxeles
+        g2d.drawOval(200, 50, 80, 80);     // (x, y, ancho, alto)
 
-        // Creamos una copia para poder ordenar los sprites por su profundidad.
-        ArrayList<Sprite> orderedSprites;
-
-        synchronized (this) {
-            orderedSprites = new ArrayList<>(sprites.values());
-        }
-
-        orderedSprites.sort(
-                Comparator.comparingDouble(sprite -> sprite.order)
-        );
-
-        for (Sprite sprite : orderedSprites) {
-            drawSprite(g2d, sprite);
-        }
-
-        g2d.dispose();
+        // 5. Dibujar texto
+        g2d.setColor(Color.BLACK);
+        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        g2d.drawString("Hola Graphics2D", 50, 180);
     }
 
-    private void drawSprite(Graphics2D g2d, Sprite sprite) {
-        BufferedImage image = getImage(sprite.sprite);
+    public synchronized void setSprite(int index, Sprite sprite) {}
 
-        if (image != null) {
-            g2d.drawImage(
-                    image,
-                    Math.round(sprite.x),
-                    Math.round(sprite.y),
-                    null
-            );
-        } else {
-            // Representación temporal cuando no se encuentra la imagen.
-            g2d.setColor(Color.BLUE);
-            g2d.fillRect(
-                    Math.round(sprite.x),
-                    Math.round(sprite.y),
-                    50,
-                    50
-            );
 
-            g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Arial", Font.BOLD, 10));
-            g2d.drawString(
-                    String.valueOf(sprite.index),
-                    Math.round(sprite.x) + 5,
-                    Math.round(sprite.y) + 25
-            );
-        }
+    public static void main(String[] args) {
+        JFrame ventana = new JFrame("Ejemplo Java Graphics2D");
+        Panel panel = new Panel(null);
+
+        ventana.add(panel);
+        ventana.setSize(400, 300);
+        ventana.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        ventana.setLocationRelativeTo(null);
+        ventana.setVisible(true);
     }
 
-    private BufferedImage getImage(String path) {
-        if (path == null || path.isEmpty()) return null;
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        //updateAgents();
+        repaint();
 
-        if (imageCache.containsKey(path)) {
-            return imageCache.get(path);
-        }
-
-        try {
-            BufferedImage image = ImageIO.read(new File(path));
-
-            if (image != null) {
-                imageCache.put(path, image);
-            }
-
-            return image;
-
-        } catch (IOException e) {
-            System.out.println("No se pudo cargar el sprite: " + path);
-            return null;
-        }
     }
 }
+

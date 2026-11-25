@@ -1,18 +1,15 @@
-
-import base.Server;
-import base.Window;
-
-import javax.swing.SwingUtilities;
+import base.Client;
+import base.ClientType;
 
 public class Main {
-
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            Window window = new Window();
+        OficinaTheOffice.main(args);
 
-            Server server = new Server(5000, window);
-
-            new Thread(server::start).start();
-        });
+        Client client = new Client(
+                "localhost",
+                5000,
+                ClientType.BIDIRECTIONAL
+        );
+        client.connect();
     }
 }
