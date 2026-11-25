@@ -1,24 +1,18 @@
-
-import base.Client;
-import base.ClientType;
-import base.Window;
+import office.model.SimulationConfig;
+import office.ui.ConfigFrame;
 
 import javax.swing.SwingUtilities;
 
+/**
+ * Punto de entrada para la computadora remota (Sucursal / Agente Cliente Socket):
+ * abre la configuracion preseleccionada en modo Sucursal para conectarse a la Matriz.
+ */
 public class MainClient {
-
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            Window window = new Window();
-
-            Client client = new Client(
-                    "localhost",
-                    5000,
-                    ClientType.DIRECTIONAL,
-                    window
-            );
-
-            new Thread(client::connect).start();
+            SimulationConfig config = new SimulationConfig();
+            config.setDistributedMode(SimulationConfig.DistributedMode.SUCURSAL_CLIENTE);
+            new ConfigFrame(config).setVisible(true);
         });
     }
 }
