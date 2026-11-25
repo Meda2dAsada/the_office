@@ -1,16 +1,13 @@
 package base;
 
+import java.io.*;
 import java.net.Socket;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 
 public class Client {
-    private int port;
-    private String host;
-    private Socket socket;
-    private ClientType clientType;
+    private final String host;
+    private final int port;
+    private final ClientType clientType;
+    private volatile String estadoConexion = "Sin conectar";
 
     public Client() {
         this("localhost", 5000, ClientType.DIRECTIONAL);
@@ -22,41 +19,43 @@ public class Client {
         this.clientType = clientType;
     }
 
+    public String getEstadoConexion() {
+        return estadoConexion;
+    }
+
     public void connect() {
-        while (true) {
-            try{
-                socket = new Socket(host, port);
+        while (!Thread.currentThread().isInterrupted()) {
+            estadoConexion = "Conectando a " + host + ":" + port;
 
-                BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
-                output.println(clientType); // envia que tipo de cliente es
+            try (Socket socket = new Socket(host, port);
+                 BufferedReader input = new BufferedReader(
+                         new InputStreamReader(socket.getInputStream()));
+                 PrintWriter output =
+                         new PrintWriter(socket.getOutputStream(), true)) {
 
-                while(true) { // aqui ya se puede actualizar la UI de la simulacion
-                    if (clientType == ClientType.DIRECTIONAL) { // solo puede recibir informacion
+                output.println(clientType);
 
-                    } else { // puede recibir y enviar informacion
-
-                    }
-
+                String mensaje;
+                while ((mensaje = input.readLine()) != null) {
+                    estadoConexion = mensaje;
                 }
 
-                /* DEBUG
-                String info = input.readLine();
-                System.out.println(info + " informacion");
-                Sprite s = Sprite.fromSubmissionFormat(info);
-                System.out.println(s + " llego la info");
-                */
             } catch (IOException e) {
-                System.out.println("Trying to connect to " + host + ":" + port + ", in 2s");
+                System.out.println(
+                        "Servidor no disponible: " + e.getMessage());
             }
-            try {Thread.sleep(2000);} catch (InterruptedException e) {}
-        }
 
+            estadoConexion = "Desconectado. Reintento en 2 segundos";
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     public static void main(String[] args) {
-        Client client = new Client();
-        client.connect();
+        new Client().connect();
     }
-
 }

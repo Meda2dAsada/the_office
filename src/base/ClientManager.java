@@ -1,20 +1,12 @@
 package base;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 
-// es una "extension" de la clase Server que le ayuda a manejar multiples conexiones de clientes
 public class ClientManager extends Thread {
-    private Socket clientSocket;
-    private ClientType clientType;
-    private ArrayList<Sprite> sprites;
-
-    private BufferedReader input;
-    private PrintWriter output;
+    private final Socket clientSocket;
+    private final ArrayList<Sprite> sprites = new ArrayList<>();
 
     public ClientManager(Socket clientSocket) {
         this.clientSocket = clientSocket;
@@ -22,30 +14,44 @@ public class ClientManager extends Thread {
 
     @Override
     public void run() {
-        try {
-            input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            output = new PrintWriter(clientSocket.getOutputStream(), true);
+        try (Socket socket = clientSocket;
+             BufferedReader input = new BufferedReader(
+                     new InputStreamReader(socket.getInputStream()));
+             PrintWriter output =
+                     new PrintWriter(socket.getOutputStream(), true)) {
 
-            // debe de tener un tipo de cliente valido cuando se hace client.connect()
-            while ((clientType = ClientType.fromValue(input.readLine())) == null) {}
+            ClientType tipo = ClientType.fromValue(input.readLine());
 
-            if(clientType == ClientType.DIRECTIONAL) { // / solo puede recibir informacion
-                //Sprite current = new Sprite("prueba/de/enviar/informacion", 10, 10, 2, 10);
-                //output.println(Sprite.toSubmissionFormat(current));
-
-                update(input.readLine());
-            }else { // puede recibir y enviar informacion
-
+            if (tipo == null) {
+                output.println("Tipo de cliente no valido");
+                return;
             }
 
-        } catch (IOException e) {}
+            output.println("Conectado al servidor de Iker");
+
+            String mensaje;
+            while ((mensaje = input.readLine()) != null) {
+                if (tipo == ClientType.BIDIRECTIONAL) {
+                    update(mensaje);
+                }
+            }
+
+        } catch (IOException e) {
+            System.out.println(
+                    "Conexion finalizada: " + e.getMessage());
+        }
     }
 
-    private synchronized void update(String spriteFromSubmission) {
-        Sprite sprite = Sprite.fromSubmissionFormat(spriteFromSubmission);
-        if(sprite == null) return;
+    private synchronized void update(String mensaje) {
+        try {
+            Sprite sprite = Sprite.fromSubmissionFormat(mensaje);
 
-        sprites.add(sprite);
-        System.out.println("New sprite: " + sprite);
+            if (sprite != null) {
+                sprites.add(sprite);
+            }
+
+        } catch (IllegalArgumentException e) {
+            System.out.println("Formato de sprite no valido");
+        }
     }
 }

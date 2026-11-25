@@ -6,9 +6,9 @@ public abstract class Agent extends SceneObject {
     }
 
     @Override
-    public synchronized void run() {
+    public final void run() {
         work();
-        super.run();
+
     }
 
     public abstract void work();
